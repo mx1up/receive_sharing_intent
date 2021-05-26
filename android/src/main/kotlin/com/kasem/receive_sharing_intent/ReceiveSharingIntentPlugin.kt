@@ -35,7 +35,9 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
     private var latestMedia: JSONArray? = null
 
     private var initialText: String? = null
+    private var initialSubj: String? = null
     private var latestText: String? = null
+    private var latestSubj: String? = null
 
     private var eventSinkMedia: EventChannel.EventSink? = null
     private var eventSinkText: EventChannel.EventSink? = null
@@ -124,9 +126,18 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
             (intent.type == null || intent.type?.startsWith("text") == true)
                     && intent.action == Intent.ACTION_SEND -> { // Sharing text
                 val value = intent.getStringExtra(Intent.EXTRA_TEXT)
-                if (initial) initialText = value
+                val valueSubj = intent.getStringExtra(Intent.EXTRA_SUBJECT)
+                if (initial) {
+                    initialText = value
+                    initialSubj = valueSubj
+                }
                 latestText = value
-                eventSinkText?.success(latestText)
+                latestSubj = valueSubj
+                eventSinkText?.success(JSONObject()
+                        .put("text", latestText)
+                        .put("title", latestSubj)
+                        .toString()
+                )
             }
             intent.action == Intent.ACTION_VIEW -> { // Opening URL
                 val value = intent.dataString

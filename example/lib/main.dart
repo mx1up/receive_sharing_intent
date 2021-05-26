@@ -13,7 +13,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late StreamSubscription _intentDataStreamSubscription;
   List<SharedMediaFile>? _sharedFiles;
-  String? _sharedText;
+  SharedUrlWithTitle? _sharedText;
 
   @override
   void initState() {
@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
 
     // For sharing or opening urls/text coming from outside the app while the app is in the memory
     _intentDataStreamSubscription =
-        ReceiveSharingIntent.getTextStream().listen((String value) {
+        ReceiveSharingIntent.getTextStream().listen((SharedUrlWithTitle value) {
           setState(() {
             _sharedText = value;
             print("Shared: $_sharedText");
@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
         });
 
     // For sharing or opening urls/text coming from outside the app while the app is closed
-    ReceiveSharingIntent.getInitialText().then((String? value) {
+    ReceiveSharingIntent.getInitialText().then((SharedUrlWithTitle? value) {
       setState(() {
         _sharedText = value;
         print("Shared: $_sharedText");
@@ -83,7 +83,8 @@ class _MyAppState extends State<MyApp> {
                   ""),
               SizedBox(height: 100),
               Text("Shared urls/text:", style: textStyleBold),
-              Text(_sharedText ?? "")
+              Text(_sharedText?.title ?? ""),
+              Text(_sharedText?.url ?? "")
             ],
           ),
         ),

@@ -12,7 +12,7 @@ class ReceiveSharingIntent {
   const EventChannel("receive_sharing_intent/events-text");
 
   static Stream<List<SharedMediaFile>>? _streamMedia;
-  static Stream<String>? _streamLink;
+  static Stream<SharedUrlWithTitle>? _streamLink;
 
   /// Returns a [Future], which completes to one of the following:
   ///
@@ -34,7 +34,7 @@ class ReceiveSharingIntent {
   ///
   ///   * the initially stored link (possibly null), on successful invocation;
   ///   * a [PlatformException], if the invocation failed in the platform plugin.
-  static Future<String?> getInitialText() async {
+  static Future<SharedUrlWithTitle?> getInitialText() async {
     return await _mChannel.invokeMethod('getInitialText');
   }
 
@@ -46,7 +46,7 @@ class ReceiveSharingIntent {
   static Future<Uri?> getInitialTextAsUri() async {
     final data = await getInitialText();
     if (data == null) return null;
-    return Uri.parse(data);
+    return Uri.parse(data.url);
   }
 
   /// Sets up a broadcast stream for receiving incoming media share change events.
@@ -104,9 +104,17 @@ class ReceiveSharingIntent {
   ///
   /// If the app was started by a link intent or user activity the stream will
   /// not emit that initial one - query either the `getInitialText` instead.
-  static Stream<String> getTextStream() {
+  static Stream<SharedUrlWithTitle> getTextStream() {
     if (_streamLink == null) {
-      _streamLink = _eChannelLink.receiveBroadcastStream("text").cast<String>();
+      final stream = _eChannelLink.receiveBroadcastStream("text").cast<String>();
+      _streamLink = stream.transform<SharedUrlWithTitle>(
+        new StreamTransformer<String, SharedUrlWithTitle>.fromHandlers(
+          handleData: (String jsonString, EventSink<SharedUrlWithTitle> sink) {
+            final json = jsonDecode(jsonString);
+            sink.add(SharedUrlWithTitle.fromJson(json));
+          },
+        ),
+      );
     }
     return _streamLink!;
   }
@@ -122,9 +130,9 @@ class ReceiveSharingIntent {
   /// not emit that initial uri - query either the `getInitialTextAsUri` instead.
   static Stream<Uri> getTextStreamAsUri() {
     return getTextStream().transform<Uri>(
-      new StreamTransformer<String, Uri>.fromHandlers(
-        handleData: (String data, EventSink<Uri> sink) {
-          sink.add(Uri.parse(data));
+      new StreamTransformer<SharedUrlWithTitle, Uri>.fromHandlers(
+        handleData: (SharedUrlWithTitle data, EventSink<Uri> sink) {
+          sink.add(Uri.parse(data.url));
         },
       ),
     );
@@ -135,6 +143,18 @@ class ReceiveSharingIntent {
   static void reset() {
     _mChannel.invokeMethod('reset').then((_) {});
   }
+}
+
+class SharedUrlWithTitle {
+  final String title;
+  final String url;
+
+  SharedUrlWithTitle(this.title, this.url);
+
+  SharedUrlWithTitle.fromJson(Map<String, dynamic> json)
+      : title = json['title'],
+        url = json['text'];
+
 }
 
 class SharedMediaFile {
