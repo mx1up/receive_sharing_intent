@@ -100,7 +100,11 @@ class ReceiveSharingIntentPlugin : FlutterPlugin, ActivityAware, MethodCallHandl
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "getInitialMedia" -> result.success(initialMedia?.toString())
-            "getInitialText" -> result.success(initialText)
+            "getInitialText" -> result.success(if (initialText == null) null else JSONObject()
+                .put("text", initialText)
+                .put("title", initialSubj)
+                .toString()
+            )
             "reset" -> {
                 initialMedia = null
                 latestMedia = null

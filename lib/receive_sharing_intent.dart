@@ -35,7 +35,9 @@ class ReceiveSharingIntent {
   ///   * the initially stored link (possibly null), on successful invocation;
   ///   * a [PlatformException], if the invocation failed in the platform plugin.
   static Future<SharedUrlWithTitle?> getInitialText() async {
-    return await _mChannel.invokeMethod('getInitialText');
+     final jsonString = await _mChannel.invokeMethod('getInitialText');
+     if (jsonString == null) return null;
+     return SharedUrlWithTitle.fromJson(jsonDecode(jsonString));
   }
 
   /// A convenience method that returns the initially stored link
